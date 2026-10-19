@@ -36,7 +36,10 @@ export function createExecuteRelayHandler(relayService: RelayServiceContract) {
 
     let response: RelayExecuteResponse;
     try {
-      response = await relayService.executeRelay(request, { clientIp: req.ip });
+      response = await relayService.executeRelay(request, {
+        clientIp: req.ip,
+        requestId: req.requestId,
+      });
     } catch (err) {
       const raw = err instanceof Error ? err.message : String(err);
       const sanitized = sanitizeErrorMessage(raw);
@@ -70,7 +73,6 @@ export function createExecuteRelayHandler(relayService: RelayServiceContract) {
         };
       }
     }
-
     const durationMs = Date.now() - start;
 
     if (response.success) {

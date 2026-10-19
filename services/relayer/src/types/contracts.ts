@@ -50,6 +50,8 @@ export interface RelayExecutionOptions {
   signedNonce?: number;
   /** Caller address for security audit logs. Not part of the signed payload. */
   clientIp?: string;
+  /** Originating HTTP request ID forwarded into async queue jobs for trace correlation (#1530). */
+  requestId?: string;
 }
 
 export interface RelayServiceContract {
