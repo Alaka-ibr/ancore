@@ -28,7 +28,13 @@ export class JobQueue implements JobQueueContract {
    * @returns The newly created job, or the existing job if suppressed.
    */
   enqueue(options: EnqueueOptions): Job {
-    const { idempotencyKey, type, payload, maxAttempts = DEFAULT_MAX_ATTEMPTS, requestId } = options;
+    const {
+      idempotencyKey,
+      type,
+      payload,
+      maxAttempts = DEFAULT_MAX_ATTEMPTS,
+      requestId,
+    } = options;
 
     const existingId = this.idempotencyIndex.get(idempotencyKey);
     if (existingId) {
