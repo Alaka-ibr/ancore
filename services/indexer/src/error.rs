@@ -69,9 +69,12 @@ impl IntoResponse for ApiError {
                 ApiError::InvalidFilter(msg) => {
                     (StatusCode::BAD_REQUEST, codes::INVALID_FILTER, msg, None)
                 }
-                ApiError::ServiceUnavailable(msg) => {
-                    (StatusCode::SERVICE_UNAVAILABLE, codes::SERVICE_UNAVAILABLE, msg, None)
-                }
+                ApiError::ServiceUnavailable(msg) => (
+                    StatusCode::SERVICE_UNAVAILABLE,
+                    codes::SERVICE_UNAVAILABLE,
+                    msg,
+                    None,
+                ),
                 ApiError::NotFound => (
                     StatusCode::NOT_FOUND,
                     codes::NOT_FOUND,

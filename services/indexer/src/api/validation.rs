@@ -174,8 +174,8 @@ mod tests {
             "t": "2024-01-15T10:30:00Z",
             "i": "a1a2a3a4-b1b2-c1c2-d1d2-d3d4d5d6d7d8"
         });
-        let encoded = base64::engine::general_purpose::URL_SAFE_NO_PAD
-            .encode(valid_json.to_string());
+        let encoded =
+            base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(valid_json.to_string());
         assert!(validate_cursor(&encoded).is_ok());
     }
 }
