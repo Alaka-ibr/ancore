@@ -182,7 +182,7 @@ export async function runShutdown(options: ShutdownOptions = {}): Promise<boolea
   let released = true;
 
   if (closers.length > 0) {
-    if (remainingMs === 0) {
+    if (remainingMs <= 10) {
       log('[shutdown] no budget left to release resources; exiting anyway');
       released = false;
     } else {
