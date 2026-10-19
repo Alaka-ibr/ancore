@@ -115,6 +115,7 @@ export {
   isVaultNotFoundError,
   isContractNotFoundError,
   isContractFailed,
+  isInsufficientFee,
   assertValidEd25519PublicKey,
   assertValidContractId,
   type CodedError,
