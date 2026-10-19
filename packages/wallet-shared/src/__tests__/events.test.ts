@@ -1,4 +1,3 @@
-import { describe, it, expect } from 'vitest';
 import { CONTRACT_EVENTS } from '../events';
 
 describe('Canonical Soroban Contract Event Symbols (#1538)', () => {
