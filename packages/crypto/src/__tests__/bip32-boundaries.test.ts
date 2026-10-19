@@ -1,4 +1,3 @@
-import { describe, it, expect } from 'vitest';
 import { deriveKeypairFromMnemonic } from '../key-derivation';
 import { Keypair } from '@stellar/stellar-sdk';
 

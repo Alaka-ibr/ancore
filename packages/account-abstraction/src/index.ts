@@ -15,9 +15,13 @@ export {
   withNetworkRetry,
   isTransientError,
   calculateBackoff,
+  createSmartAccount,
+  deriveAccountContractId,
+  ACCOUNT_CONTRACT_SALT,
   type ClientRetryOptions,
   type AccountAbstractionClientOptions,
   type AncoreClientOptions,
+  type CreateSmartAccountOptions,
   type SorobanRpcServer,
 } from './client';
 
