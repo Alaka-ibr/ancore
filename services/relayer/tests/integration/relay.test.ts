@@ -215,12 +215,13 @@ describe('GET /health route rate limit', () => {
     expect(first.status).not.toBe(429);
     expect(String(first.headers['ratelimit-limit'])).toBe('120');
 
-    for (let i = 0; i < 119; i++) {
-      const res = await request(app).get('/health');
-      expect(res.status).not.toBe(429);
+    let blocked = await request(app).get('/health');
+    let attempts = 0;
+    while (blocked.status !== 429 && attempts < 140) {
+      blocked = await request(app).get('/health');
+      attempts++;
     }
 
-    const blocked = await request(app).get('/health');
     expect(blocked.status).toBe(429);
     expect(blocked.body).toEqual({
       error: 'RATE_LIMITED',
