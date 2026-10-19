@@ -44,7 +44,7 @@ export interface RetryOptions {
    * Custom predicate to determine whether an error should trigger a retry.
    * If not provided, defaults to {@link isTransientNetworkError}.
    */
-  isRetryable?: (error: unknown) => boolean;
+  isRetryable?: (error: any) => boolean;
 
   /**
    * Optional callback invoked before each retry attempt with attempt number, error, and sleep delay.
