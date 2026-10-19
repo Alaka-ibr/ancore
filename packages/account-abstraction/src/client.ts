@@ -13,6 +13,7 @@ import {
   type ExecuteOptions,
   type ExecuteResult,
 } from './execute';
+import { NetworkError } from './errors';
 import type { SessionKey } from '@ancore/types';
 
 const NETWORK_PASSPHRASES: Record<string, string> = {
@@ -20,6 +21,7 @@ const NETWORK_PASSPHRASES: Record<string, string> = {
   mainnet: Networks.PUBLIC,
   futurenet: Networks.FUTURENET,
   local: Networks.STANDALONE,
+  standalone: Networks.STANDALONE,
 };
 
 export const ACCOUNT_CONTRACT_SALT: Buffer = Buffer.alloc(32, 0);
@@ -211,17 +213,46 @@ export interface SorobanRpcServer {
   getAccount(accountId: string): Promise<{ id: string; sequence: string }>;
   simulateTransaction(tx: unknown): Promise<unknown>;
   sendTransaction(tx: unknown): Promise<unknown>;
+  getContractData?(...args: unknown[]): Promise<unknown>;
+  getLedgerEntries?(...args: unknown[]): Promise<unknown>;
 }
 
 export interface AccountAbstractionClientOptions {
   contractId: string;
-  server: SorobanRpcServer;
   ownerPublicKey?: string;
+  server: SorobanRpcServer;
   networkPassphrase?: string;
   retryOptions?: ClientRetryOptions;
 }
 
 export type AncoreClientOptions = AccountAbstractionClientOptions;
+
+function isNotFoundError(err: unknown): boolean {
+  if (!err) return false;
+  if (typeof err === 'object') {
+    const candidate = err as {
+      status?: unknown;
+      statusCode?: unknown;
+      response?: { status?: unknown; statusCode?: unknown };
+      message?: unknown;
+    };
+    if (
+      candidate.status === 404 ||
+      candidate.statusCode === 404 ||
+      candidate.response?.status === 404 ||
+      candidate.response?.statusCode === 404
+    ) {
+      return true;
+    }
+    if (typeof candidate.message === 'string') {
+      return /not\s*found|absent|entry\s*not\s*found/i.test(candidate.message);
+    }
+  }
+  if (typeof err === 'string') {
+    return /not\s*found|absent|entry\s*not\s*found/i.test(err);
+  }
+  return false;
+}
 
 /**
  * High-level Account Abstraction Client that wraps contract invocations and RPC network calls
@@ -246,6 +277,101 @@ export class AccountAbstractionClient {
       baseDelayMs: 500,
       ...options.retryOptions,
     };
+  }
+
+  /**
+   * Check whether the smart account contract is deployed on-chain by querying Soroban RPC.
+   * Returns true if contract instance exists; returns false if 404 / absent entry.
+   * Throws NetworkError on network timeouts or unrecoverable network failures.
+   */
+  async isAccountDeployed(
+    contractId?: string,
+    overrideOptions?: ClientRetryOptions
+  ): Promise<boolean> {
+    const targetContractId = contractId ?? this.contractId;
+    if (!targetContractId) {
+      throw new Error('Contract ID is required to check deployment');
+    }
+
+    try {
+      return await this.withRetry(async () => {
+        const s = this.server;
+        if (typeof s.getContractData === 'function') {
+          try {
+            const res = await s.getContractData(
+              targetContractId,
+              xdr.ScVal.scvLedgerKeyContractInstance(),
+              xdr.ContractDataDurability.persistent()
+            );
+            return res !== null && res !== undefined;
+          } catch (err: unknown) {
+            if (isNotFoundError(err)) {
+              return false;
+            }
+            throw err;
+          }
+        }
+
+        if (typeof s.getLedgerEntries === 'function') {
+          try {
+            const key = xdr.LedgerKey.contractData(
+              new xdr.LedgerKeyContractData({
+                contract: new Address(targetContractId).toScAddress(),
+                key: xdr.ScVal.scvLedgerKeyContractInstance(),
+                durability: xdr.ContractDataDurability.persistent(),
+              })
+            );
+            const res = (await s.getLedgerEntries(key)) as
+              | { entries?: unknown[] }
+              | null
+              | undefined;
+            if (res && Array.isArray(res.entries)) {
+              return res.entries.length > 0;
+            }
+            if (res && res.entries !== undefined && res.entries !== null) {
+              return Boolean(res.entries);
+            }
+            return false;
+          } catch (err: unknown) {
+            if (isNotFoundError(err)) {
+              return false;
+            }
+            throw err;
+          }
+        }
+
+        if (typeof s.getAccount === 'function') {
+          try {
+            const acc = await s.getAccount(targetContractId);
+            return acc !== null && acc !== undefined;
+          } catch (err: unknown) {
+            if (isNotFoundError(err)) {
+              return false;
+            }
+            throw err;
+          }
+        }
+
+        return false;
+      }, overrideOptions);
+    } catch (error: unknown) {
+      if (isNotFoundError(error)) {
+        return false;
+      }
+      const errName =
+        typeof error === 'object' && error !== null && 'name' in error
+          ? (error as { name?: string }).name
+          : '';
+      const errMsg = error instanceof Error ? error.message : String(error);
+
+      if (isTransientError(error) || /timeout/i.test(errMsg) || errName === 'NetworkError') {
+        throw new NetworkError(
+          `Network timeout or failure while checking account deployment: ${errMsg}`,
+          error
+        );
+      }
+      throw error;
+    }
   }
 
   /**
@@ -338,12 +464,12 @@ export class AccountAbstractionClient {
    * Get contract owner address with retry.
    */
   async getOwner(sourceAccount?: string, overrideOptions?: ClientRetryOptions): Promise<string> {
-    const source = sourceAccount ?? this.ownerPublicKey ?? this.contractId;
+    const resolvedSource = sourceAccount ?? this.ownerPublicKey ?? this.contractId;
     return this.withRetry(
       () =>
         this.accountContract.getOwner({
           server: this.server,
-          sourceAccount: source,
+          sourceAccount: resolvedSource,
           networkPassphrase: this.networkPassphrase,
         }),
       overrideOptions
@@ -354,12 +480,12 @@ export class AccountAbstractionClient {
    * Get contract nonce with retry.
    */
   async getNonce(sourceAccount?: string, overrideOptions?: ClientRetryOptions): Promise<number> {
-    const source = sourceAccount ?? this.ownerPublicKey ?? this.contractId;
+    const resolvedSource = sourceAccount ?? this.ownerPublicKey ?? this.contractId;
     return this.withRetry(
       () =>
         this.accountContract.getNonce({
           server: this.server,
-          sourceAccount: source,
+          sourceAccount: resolvedSource,
           networkPassphrase: this.networkPassphrase,
         }),
       overrideOptions
