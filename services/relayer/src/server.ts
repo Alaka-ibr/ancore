@@ -211,7 +211,7 @@ export function createApp(
     pollIntervalMs: env.SCHEDULER_POLL_INTERVAL_MS,
   });
 
-  if (relayOptions?.startScheduler !== false) {
+  if (relayOptions?.startScheduler ?? env.NODE_ENV !== 'test') {
     schedulerEngine.start();
   }
 
