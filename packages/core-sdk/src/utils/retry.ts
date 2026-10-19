@@ -90,6 +90,8 @@ const TRANSIENT_MESSAGE_PATTERNS = [
   /service unavailable/i,
   /gateway timeout/i,
   /bad gateway/i,
+  /transient/i,
+  /retry/i,
   /\b50[0234]\b/,
 ];
 

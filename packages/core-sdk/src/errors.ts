@@ -129,6 +129,31 @@ export function isContractNotFoundError(
   return hasErrorCode(error, ['CONTRACT_NOT_FOUND', 'CONTRACT_MISSING'] as const, 404);
 }
 
+/** Alias for isInvalidSignatureError */
+export const isInvalidSignature = isInvalidSignatureError;
+
+/** True when a request encountered a network error or connection failure. */
+export function isNetworkError(
+  error: unknown
+): error is ErrorWithCode<
+  'NETWORK_ERROR' | 'NETWORK_TIMEOUT' | 'ETIMEDOUT' | 'ECONNABORTED' | 'ECONNREFUSED'
+> {
+  return hasErrorCode(error, [
+    'NETWORK_ERROR',
+    'NETWORK_TIMEOUT',
+    'ETIMEDOUT',
+    'ECONNABORTED',
+    'ECONNREFUSED',
+  ] as const);
+}
+
+/** True when a smart contract invocation fails or reverts. */
+export function isContractFailed(
+  error: unknown
+): error is ErrorWithCode<'CONTRACT_FAILED' | 'CONTRACT_ERROR' | 'CONTRACT_NOT_FOUND'> {
+  return hasErrorCode(error, ['CONTRACT_FAILED', 'CONTRACT_ERROR', 'CONTRACT_NOT_FOUND'] as const);
+}
+
 // ---------------------------------------------------------------------------
 // Simulation errors
 // ---------------------------------------------------------------------------
