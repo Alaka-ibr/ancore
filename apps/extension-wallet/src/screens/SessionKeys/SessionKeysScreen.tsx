@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AddSessionKeyDialog } from './AddSessionKeyDialog';
 import { RevokeConfirmModal } from './RevokeConfirmModal';
 import { useSessionKeys } from '../../hooks/useSessionKeys';
-import { SessionKeyRow } from '../../features/session-keys';
+import { SessionKeyRow, filterSessionKeys } from '../../features/session-keys';
 import { ArrowLeft, KeyRound, Plus, X } from 'lucide-react';
 
 export const SessionKeysScreen: React.FC = () => {
@@ -19,7 +19,10 @@ export const SessionKeysScreen: React.FC = () => {
   } = useSessionKeys();
   const [isDialogOpen, setDialogOpen] = useState(false);
   const [isRevokeAllOpen, setRevokeAllOpen] = useState(false);
+  const [query, setQuery] = useState('');
+
   const revocableKeys = sessionKeys.filter((key) => key.expiresAt !== 0);
+  const visibleKeys = useMemo(() => filterSessionKeys(sessionKeys, query), [sessionKeys, query]);
 
   const handleRevokeAll = async (): Promise<void> => {
     setRevokeAllOpen(false);
@@ -69,6 +72,17 @@ export const SessionKeysScreen: React.FC = () => {
       <section>
         <h2 className="mb-3 text-sm font-semibold">Active keys</h2>
 
+        {sessionKeys.length > 0 && (
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search by key or label"
+            aria-label="Search session keys"
+            className="mb-3 h-10 w-full rounded-xl border bg-card px-3 text-sm"
+          />
+        )}
+
         {isLoading && <p className="text-sm text-muted-foreground">Loading…</p>}
 
         {!isLoading && sessionKeys.length === 0 && (
@@ -93,9 +107,15 @@ export const SessionKeysScreen: React.FC = () => {
           </div>
         )}
 
-        {!isLoading && sessionKeys.length > 0 && (
+        {!isLoading && sessionKeys.length > 0 && visibleKeys.length === 0 && (
+          <p role="status" className="py-6 text-center text-sm text-muted-foreground">
+            No matching session keys
+          </p>
+        )}
+
+        {!isLoading && visibleKeys.length > 0 && (
           <ul className="space-y-3">
-            {sessionKeys.map((key) => (
+            {visibleKeys.map((key) => (
               <SessionKeyRow
                 key={key.publicKey}
                 sessionKey={key}
