@@ -132,7 +132,12 @@ export function isInsufficientFee(
   if (typeof error === 'string') {
     parts.push(error);
   } else if (typeof error === 'object') {
-    const candidate = error as { code?: unknown; name?: unknown; message?: unknown; data?: unknown };
+    const candidate = error as {
+      code?: unknown;
+      name?: unknown;
+      message?: unknown;
+      data?: unknown;
+    };
     if (typeof candidate.code === 'string') parts.push(candidate.code);
     if (typeof candidate.name === 'string') parts.push(candidate.name);
     if (typeof candidate.message === 'string') parts.push(candidate.message);
