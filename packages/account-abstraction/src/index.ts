@@ -30,6 +30,7 @@ export { validateSessionKeyPolicy, type ValidationResult } from './validation';
 
 export { getOwner, getNonce, getVersion } from './get-owner-nonce';
 export { getSessionKey } from './get-session-key';
+export { getSessionKeyRemainingTimeMs } from './session-keys';
 
 export {
   AccountContractError,
